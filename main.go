@@ -95,9 +95,11 @@ func Perform(args Arguments, writer io.Writer) error {
 		}
 	case "add":
 		{
-			err2 := json.Unmarshal(ctx, &users)
-			if err2 != nil {
-				return err2
+			if len(ctx) > 0 {
+				err2 := json.Unmarshal(ctx, &users)
+				if err2 != nil {
+					return err2
+				}
 			}
 			var user User
 
@@ -122,7 +124,6 @@ func Perform(args Arguments, writer io.Writer) error {
 				return err
 			}
 			b, _ := ioutil.ReadAll(file)
-			fmt.Println(string(b))
 			writer.Write(b)
 			break
 		}

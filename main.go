@@ -58,27 +58,28 @@ func Perform(args Arguments, writer io.Writer) error {
 	}
 	defer f.Close()
 	ctx, err := ioutil.ReadAll(f)
+
 	if err != nil {
 		return err
 	}
 	var users []User
+
 	switch args["operation"] {
 	case "list":
 		{
 			err2 := json.Unmarshal(ctx, &users)
 			if err2 != nil {
-				panic(err)
+				return err2
 			}
 			writer.Write(ctx)
 		}
 	case "findById":
 		{
-			id := args["id"]
 			err2 := json.Unmarshal(ctx, &users)
 			if err2 != nil {
-				panic(err)
+				return err2
 			}
-
+			id := args["id"]
 			if len(users) > 0 {
 				for _, val := range users {
 					if val.Id == id {
@@ -90,36 +91,49 @@ func Perform(args Arguments, writer io.Writer) error {
 					}
 				}
 			}
+			break
 		}
 	case "add":
 		{
-			var user User
-			err := json.Unmarshal([]byte(args["item"]), &user)
-			if err != nil {
-				panic(err)
+			err2 := json.Unmarshal(ctx, &users)
+			if err2 != nil {
+				return err2
 			}
-			err = json.Unmarshal(ctx, &users)
-			if err != nil {
-				panic(err)
+			var user User
+
+			err1 := json.Unmarshal([]byte(args["item"]), &user)
+			if err1 != nil {
+				return err1
 			}
 			for _, val := range users {
 				if val.Id == user.Id {
 					s := fmt.Sprintf("Item with id %s already exists", user.Id)
 					writer.Write([]byte(s))
-					return fmt.Errorf("%s", s)
+					return nil
 				}
 			}
 			users = append(users, user)
 
 			SaveUser(users, args["fileName"])
+
+			file, err := os.OpenFile(args["fileName"], os.O_RDWR|os.O_CREATE, fPermission)
+
+			if err != nil {
+				return err
+			}
+			b, _ := ioutil.ReadAll(file)
+			fmt.Println(string(b))
+			writer.Write(b)
+			break
 		}
 	case "remove":
 		{
-			id := args["id"]
 			err2 := json.Unmarshal(ctx, &users)
 			if err2 != nil {
-				panic(err)
+				return err2
 			}
+			id := args["id"]
+
 			var notFoundFlag bool = true
 
 			for i, val := range users {
@@ -132,12 +146,15 @@ func Perform(args Arguments, writer io.Writer) error {
 			if notFoundFlag {
 				s := fmt.Sprintf("Item with id %s not found", id)
 				writer.Write([]byte(s))
-				return fmt.Errorf("%s", s)
+				return nil
+
 			}
 			SaveUser(users, args["fileName"])
+			break
 		}
 	default:
 		return fmt.Errorf("Operation %s not allowed!", args["operation"])
+
 	}
 	return nil
 }

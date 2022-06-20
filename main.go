@@ -63,22 +63,21 @@ func Perform(args Arguments, writer io.Writer) error {
 		return err
 	}
 	var users []User
+	if len(ctx) > 0 {
+		err2 := json.Unmarshal(ctx, &users)
+		if err2 != nil {
+			return err2
+		}
+	}
 
 	switch args["operation"] {
 	case "list":
 		{
-			err2 := json.Unmarshal(ctx, &users)
-			if err2 != nil {
-				return err2
-			}
 			writer.Write(ctx)
+			break
 		}
 	case "findById":
 		{
-			err2 := json.Unmarshal(ctx, &users)
-			if err2 != nil {
-				return err2
-			}
 			id := args["id"]
 			if len(users) > 0 {
 				for _, val := range users {
@@ -95,12 +94,6 @@ func Perform(args Arguments, writer io.Writer) error {
 		}
 	case "add":
 		{
-			if len(ctx) > 0 {
-				err2 := json.Unmarshal(ctx, &users)
-				if err2 != nil {
-					return err2
-				}
-			}
 			var user User
 
 			err1 := json.Unmarshal([]byte(args["item"]), &user)
@@ -115,7 +108,6 @@ func Perform(args Arguments, writer io.Writer) error {
 				}
 			}
 			users = append(users, user)
-
 			SaveUser(users, args["fileName"])
 
 			file, err := os.OpenFile(args["fileName"], os.O_RDWR|os.O_CREATE, fPermission)
@@ -129,12 +121,7 @@ func Perform(args Arguments, writer io.Writer) error {
 		}
 	case "remove":
 		{
-			err2 := json.Unmarshal(ctx, &users)
-			if err2 != nil {
-				return err2
-			}
 			id := args["id"]
-
 			var notFoundFlag bool = true
 
 			for i, val := range users {
@@ -148,14 +135,12 @@ func Perform(args Arguments, writer io.Writer) error {
 				s := fmt.Sprintf("Item with id %s not found", id)
 				writer.Write([]byte(s))
 				return nil
-
 			}
 			SaveUser(users, args["fileName"])
 			break
 		}
 	default:
 		return fmt.Errorf("Operation %s not allowed!", args["operation"])
-
 	}
 	return nil
 }
